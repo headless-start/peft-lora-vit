@@ -1,0 +1,6 @@
+backbone: vit_base_patch16_224
+pretrained: true
+lora:
+  r: 8
+  alpha: 16
+  dropout: 0.0
