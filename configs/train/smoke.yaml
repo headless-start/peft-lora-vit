@@ -1,0 +1,7 @@
+# tiny run for a quick CPU smoke test (pair with data.fake=true device=cpu)
+epochs: 1
+lr: 1e-3
+weight_decay: 0.05
+amp: false
+limit_train_batches: 2
+limit_val_batches: 2
