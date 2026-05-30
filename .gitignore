@@ -9,9 +9,9 @@ __pycache__/
 venv/
 
 # downloaded data & generated artifacts (not committed)
-data/
-outputs/
-wandb/
+/data/
+/outputs/
+/wandb/
 *.ckpt
 *.pt
 *.pth
