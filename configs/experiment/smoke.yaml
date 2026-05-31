@@ -1,0 +1,18 @@
+# @package _global_
+# Tiny end-to-end run on CPU with random data and no downloads.
+# Usage: python train.py +experiment=smoke
+defaults:
+  - override /train: smoke
+
+device: cpu
+
+model:
+  pretrained: false
+
+data:
+  fake: true
+  batch_size: 8
+  num_workers: 0
+
+wandb:
+  mode: disabled
