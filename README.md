@@ -73,3 +73,7 @@ src/       data, lora, model, training engine, plotting
 train.py   entry point
 results/   training curve + metrics.json
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
