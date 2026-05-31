@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 
 def save_curve(history, path):
+    """Plot train/val loss and accuracy across epochs and save the figure to path."""
     epochs = [h["epoch"] for h in history]
     fig, (ax_loss, ax_acc) = plt.subplots(1, 2, figsize=(10, 4))
 

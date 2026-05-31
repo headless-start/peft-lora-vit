@@ -4,6 +4,7 @@ from .lora import LoRAQKV, inject_lora
 
 
 def build_model(cfg, num_classes):
+    """Build the ViT, attach LoRA to q/v, swap the head, and freeze the rest."""
     model = timm.create_model(
         cfg.model.backbone,
         pretrained=cfg.model.pretrained,

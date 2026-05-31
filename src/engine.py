@@ -5,6 +5,7 @@ criterion = nn.CrossEntropyLoss()
 
 
 def run_epoch(model, loader, device, optimizer=None, scaler=None, use_amp=False, limit_batches=None):
+    """Run one epoch; trains when an optimizer is passed, otherwise evaluates. Returns (loss, acc)."""
     train = optimizer is not None
     model.train(train)
     loss_sum, correct, total = 0.0, 0, 0
