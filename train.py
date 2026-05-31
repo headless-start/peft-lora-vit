@@ -15,6 +15,7 @@ from src.utils import count_parameters, set_seed
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: DictConfig):
+    """Fine-tune LoRA adapters on the configured dataset and save metrics + a curve."""
     set_seed(cfg.seed)
     use_cuda = cfg.device == "cuda" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")

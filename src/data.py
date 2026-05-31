@@ -8,6 +8,7 @@ NUM_CLASSES = 37
 
 
 def build_transforms(image_size):
+    """ImageNet-normalised transforms: light augmentation for train, center crop for eval."""
     train_tf = transforms.Compose([
         transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0)),
         transforms.RandomHorizontalFlip(),
@@ -24,6 +25,7 @@ def build_transforms(image_size):
 
 
 def build_loaders(cfg):
+    """Build the train/val dataloaders — real Pets, or random data for the smoke test."""
     train_tf, eval_tf = build_transforms(cfg.data.image_size)
     size = cfg.data.image_size
 

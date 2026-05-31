@@ -30,6 +30,7 @@ class LoRAQKV(nn.Module):
             nn.init.zeros_(b.weight)  # start as a no-op so training begins from the pretrained model
 
     def forward(self, x):
+        """Add the low-rank q/v deltas on top of the frozen qkv output."""
         qkv = self.qkv(x)
         xd = self.dropout(x)
         dq = self.lora_b_q(self.lora_a_q(xd)) * self.scaling
