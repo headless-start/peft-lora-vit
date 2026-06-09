@@ -60,6 +60,13 @@ python train.py wandb.mode=online
 
 Results are written to `results/` (training curve + `metrics.json`); the best checkpoint goes to `outputs/`.
 
+Classify your own images with the trained checkpoint:
+
+```bash
+python predict.py path/to/cat.jpg path/to/dog.jpg
+# path/to/cat.jpg: Abyssinian (100.0%), Russian Blue (0.0%), Shiba Inu (0.0%)
+```
+
 ---
 
 ## 🛠 System Requirements

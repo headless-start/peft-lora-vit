@@ -4,7 +4,19 @@ from torchvision.datasets import FakeData, OxfordIIITPet
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
-NUM_CLASSES = 37
+
+# Oxford-IIIT Pets breed names, in torchvision's label order
+CLASSES = [
+    "Abyssinian", "American Bulldog", "American Pit Bull Terrier", "Basset Hound",
+    "Beagle", "Bengal", "Birman", "Bombay", "Boxer", "British Shorthair",
+    "Chihuahua", "Egyptian Mau", "English Cocker Spaniel", "English Setter",
+    "German Shorthaired", "Great Pyrenees", "Havanese", "Japanese Chin",
+    "Keeshond", "Leonberger", "Maine Coon", "Miniature Pinscher", "Newfoundland",
+    "Persian", "Pomeranian", "Pug", "Ragdoll", "Russian Blue", "Saint Bernard",
+    "Samoyed", "Scottish Terrier", "Shiba Inu", "Siamese", "Sphynx",
+    "Staffordshire Bull Terrier", "Wheaten Terrier", "Yorkshire Terrier",
+]
+NUM_CLASSES = len(CLASSES)
 
 
 def build_transforms(image_size):
