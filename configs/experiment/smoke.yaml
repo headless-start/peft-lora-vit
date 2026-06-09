@@ -1,5 +1,5 @@
 # @package _global_
-# Tiny end-to-end run on CPU with random data and no downloads.
+# Tiny end-to-end run on CPU with random data, a small backbone and no downloads.
 # Usage: python train.py +experiment=smoke
 defaults:
   - override /train: smoke
@@ -7,6 +7,7 @@ defaults:
 device: cpu
 
 model:
+  backbone: vit_tiny_patch16_224
   pretrained: false
 
 data:
