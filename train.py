@@ -8,14 +8,26 @@ from omegaconf import DictConfig, OmegaConf
 
 from src.data import build_loaders
 from src.engine import run_epoch
-from src.model import build_model
+from src.model import build_model, trainable_state_dict
 from src.plot import save_curve
 from src.utils import count_parameters, set_seed
 
 
-@hydra.main(version_base=None, config_path="configs", config_name="config")
-def main(cfg: DictConfig):
-    """Fine-tune LoRA adapters on the configured dataset and save metrics + a curve."""
+def build_scheduler(optimizer, cfg):
+    """Linear warmup for the first epochs, then cosine annealing down to min_lr."""
+    warmup = cfg.train.warmup_epochs
+    cosine = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=cfg.train.epochs - warmup, eta_min=cfg.train.min_lr)
+    if warmup == 0:
+        return cosine
+    linear = torch.optim.lr_scheduler.LinearLR(
+        optimizer, start_factor=1 / (warmup + 1), total_iters=warmup)
+    return torch.optim.lr_scheduler.SequentialLR(
+        optimizer, [linear, cosine], milestones=[warmup])
+
+
+def run_training(cfg, ckpt_path="outputs/best.pt"):
+    """Train LoRA adapters with the given config; returns metrics and the epoch history."""
     set_seed(cfg.seed)
     use_cuda = cfg.device == "cuda" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -26,15 +38,15 @@ def main(cfg: DictConfig):
     model.to(device)
 
     trainable, total = count_parameters(model)
-    print(f"backbone={cfg.model.backbone}  lora_layers={n_lora}  "
+    print(f"backbone={cfg.model.backbone}  lora_r={cfg.model.lora.r}  lora_layers={n_lora}  "
           f"trainable={trainable:,}/{total:,} ({100 * trainable / total:.2f}%)")
 
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=cfg.train.lr, weight_decay=cfg.train.weight_decay)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.train.epochs)
+    scheduler = build_scheduler(optimizer, cfg)
     scaler = torch.amp.GradScaler(device.type, enabled=use_amp)
 
-    wandb.init(project=cfg.wandb.project, mode=cfg.wandb.mode,
+    wandb.init(project=cfg.wandb.project, mode=cfg.wandb.mode, name=cfg.wandb.name,
                config=OmegaConf.to_container(cfg, resolve=True))
 
     history, best_acc = [], 0.0
@@ -54,27 +66,36 @@ def main(cfg: DictConfig):
 
         if va_acc > best_acc:
             best_acc = va_acc
-            os.makedirs("outputs", exist_ok=True)
-            torch.save({"model": model.state_dict(), "epoch": epoch, "val_acc": best_acc},
-                       "outputs/best.pt")
+            os.makedirs(os.path.dirname(ckpt_path) or ".", exist_ok=True)
+            # only the adapters + head go in the checkpoint — a few MB instead of 344
+            torch.save({"model": trainable_state_dict(model), "epoch": epoch,
+                        "val_acc": best_acc}, ckpt_path)
+
+    wandb.finish()
+    print(f"best val acc: {best_acc:.4f}")
+    return {"best_acc": best_acc, "trainable": trainable, "total": total,
+            "history": history}
+
+
+@hydra.main(version_base=None, config_path="configs", config_name="config")
+def main(cfg: DictConfig):
+    """Single training run: train, then write the curve figure and metrics.json."""
+    res = run_training(cfg)
 
     os.makedirs("results", exist_ok=True)
-    save_curve(history, "results/training_curve.png")
+    save_curve(res["history"], "results/training_curve.png")
     metrics = {
         "backbone": cfg.model.backbone,
         "dataset": cfg.data.name,
         "epochs": cfg.train.epochs,
-        "top1_acc": round(best_acc, 4),
-        "trainable_params": trainable,
-        "total_params": total,
-        "trainable_pct": round(100 * trainable / total, 3),
+        "top1_acc": round(res["best_acc"], 4),
+        "trainable_params": res["trainable"],
+        "total_params": res["total"],
+        "trainable_pct": round(100 * res["trainable"] / res["total"], 3),
         "lora": OmegaConf.to_container(cfg.model.lora, resolve=True),
     }
     with open("results/metrics.json", "w") as f:
         json.dump(metrics, f, indent=2)
-
-    wandb.finish()
-    print(f"best val acc: {best_acc:.4f}")
 
 
 if __name__ == "__main__":

@@ -8,15 +8,16 @@ from src.data import CLASSES, NUM_CLASSES, build_transforms
 from src.model import build_model
 
 
-def load_model(ckpt_path, backbone, r, alpha, device):
-    """Rebuild the LoRA model and load trained weights from a checkpoint."""
+def load_model(ckpt_path, backbone, r, alpha_factor, device):
+    """Rebuild the model on pretrained weights and overlay the trained adapters + head."""
     cfg = OmegaConf.create({
-        "model": {"backbone": backbone, "pretrained": False,
-                  "lora": {"r": r, "alpha": alpha, "dropout": 0.0}},
+        "model": {"backbone": backbone, "pretrained": True, "drop_path_rate": 0.0,
+                  "lora": {"r": r, "alpha_factor": alpha_factor, "dropout": 0.0}},
     })
     model, _ = build_model(cfg, NUM_CLASSES)
     ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=True)
-    model.load_state_dict(ckpt["model"])
+    missing, unexpected = model.load_state_dict(ckpt["model"], strict=False)
+    assert not unexpected, f"checkpoint keys not in model: {unexpected[:3]}"
     model.to(device).eval()
     return model
 
@@ -38,12 +39,12 @@ def main():
     parser.add_argument("--ckpt", default="outputs/best.pt")
     parser.add_argument("--backbone", default="vit_base_patch16_224")
     parser.add_argument("--lora-r", type=int, default=8)
-    parser.add_argument("--lora-alpha", type=int, default=16)
+    parser.add_argument("--alpha-factor", type=int, default=2)
     parser.add_argument("--topk", type=int, default=3)
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = load_model(args.ckpt, args.backbone, args.lora_r, args.lora_alpha, device)
+    model = load_model(args.ckpt, args.backbone, args.lora_r, args.alpha_factor, device)
 
     for path in args.images:
         preds = predict(model, path, device, args.topk)

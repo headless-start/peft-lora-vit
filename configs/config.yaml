@@ -10,6 +10,7 @@ device: cuda
 wandb:
   project: peft-vit-demo
   mode: offline
+  name: null
 
 hydra:
   job:
