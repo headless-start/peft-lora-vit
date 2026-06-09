@@ -1,0 +1,6 @@
+name: flowers102
+root: data
+image_size: 224
+batch_size: 64
+num_workers: 4
+fake: false
