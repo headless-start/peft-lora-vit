@@ -37,6 +37,9 @@ def save_ablation(rows, path):
     ax_par.set(xlabel="lora rank", ylabel="trainable params (K)", title="cost vs rank",
                xscale="log", xticks=ranks, xticklabels=[str(r) for r in ranks])
 
+    for ax in (ax_acc, ax_par):
+        ax.minorticks_off()  # log-scale minor labels collide with the rank ticks
+
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)

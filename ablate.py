@@ -29,13 +29,14 @@ def main():
             rows.append({"r": r, "top1_acc": round(res["best_acc"], 4),
                          "trainable_params": res["trainable"],
                          "trainable_pct": round(100 * res["trainable"] / res["total"], 3)})
+            # write after every run so a crash doesn't lose the finished ones
+            os.makedirs("results", exist_ok=True)
+            with open("results/ablation.json", "w") as f:
+                json.dump(rows, f, indent=2)
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-    os.makedirs("results", exist_ok=True)
-    with open("results/ablation.json", "w") as f:
-        json.dump(rows, f, indent=2)
     save_ablation(rows, "results/ablation.png")
 
     print("\n| rank | top-1 acc | trainable params | % of total |")
