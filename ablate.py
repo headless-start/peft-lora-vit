@@ -6,43 +6,55 @@ import os
 import torch
 from hydra import compose, initialize
 
-from src.plot import save_ablation
+from src.plot import save_ablation, save_placement
 from train import run_training
 
 
 def main():
-    parser = argparse.ArgumentParser(description="LoRA rank ablation")
+    parser = argparse.ArgumentParser(description="LoRA rank / placement ablation")
     parser.add_argument("--ranks", default="4,8,16,32",
                         help="comma-separated lora ranks to sweep")
+    parser.add_argument("--placements", default="qv",
+                        help="comma-separated placements to sweep, e.g. q,v,qv,qkv")
     parser.add_argument("overrides", nargs="*",
                         help="extra hydra overrides, e.g. data=flowers")
     args = parser.parse_args()
-    args.ranks = [int(r) for r in args.ranks.split(",")]
+    ranks = [int(r) for r in args.ranks.split(",")]
+    placements = args.placements.split(",")
 
+    # rank sweeps write ablation.*, placement sweeps write placement.*
+    stem = "placement" if len(placements) > 1 else "ablation"
     rows = []
     with initialize(version_base=None, config_path="configs"):
-        for r in args.ranks:
-            overrides = [f"model.lora.r={r}", f"wandb.name=lora-r{r}", *args.overrides]
-            cfg = compose(config_name="config", overrides=overrides)
-            print(f"\n=== lora r={r} ===")
-            res = run_training(cfg, ckpt_path=f"outputs/best_r{r}.pt")
-            rows.append({"r": r, "top1_acc": round(res["best_acc"], 4),
-                         "trainable_params": res["trainable"],
-                         "trainable_pct": round(100 * res["trainable"] / res["total"], 3)})
-            # write after every run so a crash doesn't lose the finished ones
-            os.makedirs("results", exist_ok=True)
-            with open("results/ablation.json", "w") as f:
-                json.dump(rows, f, indent=2)
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+        for p in placements:
+            for r in ranks:
+                overrides = [f"model.lora.r={r}",
+                             f"model.lora.placement=[{','.join(p)}]",
+                             f"wandb.name=lora-r{r}-{p}", *args.overrides]
+                cfg = compose(config_name="config", overrides=overrides)
+                print(f"\n=== lora r={r} placement={p} ===")
+                res = run_training(cfg, ckpt_path=f"outputs/best_r{r}_{p}.pt")
+                rows.append({"r": r, "placement": p,
+                             "top1_acc": round(res["best_acc"], 4),
+                             "trainable_params": res["trainable"],
+                             "trainable_pct": round(100 * res["trainable"] / res["total"], 3)})
+                # write after every run so a crash doesn't lose the finished ones
+                os.makedirs("results", exist_ok=True)
+                with open(f"results/{stem}.json", "w") as f:
+                    json.dump(rows, f, indent=2)
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
-    save_ablation(rows, "results/ablation.png")
+    if len(placements) > 1:
+        save_placement(rows, f"results/{stem}.png")
+    else:
+        save_ablation(rows, f"results/{stem}.png")
 
-    print("\n| rank | top-1 acc | trainable params | % of total |")
-    print("|------|-----------|------------------|------------|")
+    print("\n| rank | placement | top-1 acc | trainable params | % of total |")
+    print("|------|-----------|-----------|------------------|------------|")
     for row in rows:
-        print(f"| {row['r']} | {row['top1_acc']:.1%} | "
+        print(f"| {row['r']} | {row['placement']} | {row['top1_acc']:.1%} | "
               f"{row['trainable_params'] / 1e3:.0f}K | {row['trainable_pct']:.2f}% |")
 
 

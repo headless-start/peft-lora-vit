@@ -8,11 +8,12 @@ from src.data import CLASSES, NUM_CLASSES, build_transforms
 from src.model import build_model
 
 
-def load_model(ckpt_path, backbone, r, alpha_factor, device):
+def load_model(ckpt_path, backbone, r, alpha_factor, device, placement="qv"):
     """Rebuild the model on pretrained weights, then load the trained LoRA weights and head."""
     cfg = OmegaConf.create({
         "model": {"backbone": backbone, "pretrained": True, "drop_path_rate": 0.0,
-                  "lora": {"r": r, "alpha_factor": alpha_factor, "dropout": 0.0}},
+                  "lora": {"r": r, "alpha_factor": alpha_factor, "dropout": 0.0,
+                           "placement": list(placement)}},
     })
     model, _ = build_model(cfg, NUM_CLASSES)
     ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=True)
@@ -40,11 +41,13 @@ def main():
     parser.add_argument("--backbone", default="vit_base_patch16_224")
     parser.add_argument("--lora-r", type=int, default=8)
     parser.add_argument("--alpha-factor", type=int, default=2)
+    parser.add_argument("--placement", default="qv", help="which projections carry lora, e.g. qv")
     parser.add_argument("--topk", type=int, default=3)
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = load_model(args.ckpt, args.backbone, args.lora_r, args.alpha_factor, device)
+    model = load_model(args.ckpt, args.backbone, args.lora_r, args.alpha_factor, device,
+                       args.placement)
 
     for path in args.images:
         preds = predict(model, path, device, args.topk)

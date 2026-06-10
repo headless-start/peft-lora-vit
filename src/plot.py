@@ -43,3 +43,18 @@ def save_ablation(rows, path):
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
+
+
+def save_placement(rows, path):
+    """Bar chart of accuracy by LoRA placement (q/k/v subsets) at fixed rank."""
+    labels = [r["placement"] for r in rows]
+    accs = [r["top1_acc"] for r in rows]
+    fig, ax = plt.subplots(figsize=(7, 4))
+    bars = ax.bar(labels, accs, color="tab:blue")
+    ax.bar_label(bars, fmt="%.3f", padding=2, fontsize=9)
+    lo, hi = min(accs), max(accs)
+    ax.set_ylim(lo - 3 * (hi - lo + 0.005), hi + 2 * (hi - lo + 0.005))
+    ax.set(xlabel="lora placement", ylabel="top-1 accuracy", title="accuracy vs placement")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)

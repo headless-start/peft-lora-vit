@@ -4,7 +4,7 @@ from .lora import LoRAQKV, inject_lora
 
 
 def build_model(cfg, num_classes):
-    """Build the ViT, attach LoRA to q/v, swap the head, and freeze the rest."""
+    """Build the ViT, attach LoRA where configured, swap the head, and freeze the rest."""
     model = timm.create_model(
         cfg.model.backbone,
         pretrained=cfg.model.pretrained,
@@ -13,7 +13,8 @@ def build_model(cfg, num_classes):
     )
     r = cfg.model.lora.r
     alpha = cfg.model.lora.alpha_factor * r
-    n_lora = inject_lora(model, r, alpha, cfg.model.lora.dropout)
+    targets = tuple(cfg.model.lora.get("placement", ["q", "v"]))
+    n_lora = inject_lora(model, r, alpha, cfg.model.lora.dropout, targets)
     freeze_backbone(model)
     return model, n_lora
 
@@ -24,8 +25,8 @@ def freeze_backbone(model):
         p.requires_grad_(False)
     for m in model.modules():
         if isinstance(m, LoRAQKV):
-            for lora_layer in (m.lora_a_q, m.lora_b_q, m.lora_a_v, m.lora_b_v):
-                for p in lora_layer.parameters():
+            for name, p in m.named_parameters():
+                if name.startswith("lora_"):
                     p.requires_grad_(True)
     for p in model.get_classifier().parameters():
         p.requires_grad_(True)
