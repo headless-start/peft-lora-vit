@@ -9,7 +9,7 @@ from src.model import build_model
 
 
 def load_model(ckpt_path, backbone, r, alpha_factor, device):
-    """Rebuild the model on pretrained weights and overlay the trained adapters + head."""
+    """Rebuild the model on pretrained weights, then load the trained LoRA weights and head."""
     cfg = OmegaConf.create({
         "model": {"backbone": backbone, "pretrained": True, "drop_path_rate": 0.0,
                   "lora": {"r": r, "alpha_factor": alpha_factor, "dropout": 0.0}},

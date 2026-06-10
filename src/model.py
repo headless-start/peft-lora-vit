@@ -19,19 +19,19 @@ def build_model(cfg, num_classes):
 
 
 def freeze_backbone(model):
-    """Freeze everything, then re-enable the LoRA adapters and the classifier head."""
+    """Freeze everything, then re-enable the LoRA matrices and the classifier head."""
     for p in model.parameters():
         p.requires_grad_(False)
     for m in model.modules():
         if isinstance(m, LoRAQKV):
-            for adapter in (m.lora_a_q, m.lora_b_q, m.lora_a_v, m.lora_b_v):
-                for p in adapter.parameters():
+            for lora_layer in (m.lora_a_q, m.lora_b_q, m.lora_a_v, m.lora_b_v):
+                for p in lora_layer.parameters():
                     p.requires_grad_(True)
     for p in model.get_classifier().parameters():
         p.requires_grad_(True)
 
 
 def trainable_state_dict(model):
-    """State dict restricted to trainable tensors (LoRA adapters + head) — a few MB, not 344."""
+    """State dict with just the trainable tensors (LoRA matrices + head) — a few MB, not 344."""
     keep = {n for n, p in model.named_parameters() if p.requires_grad}
     return {k: v for k, v in model.state_dict().items() if k in keep}

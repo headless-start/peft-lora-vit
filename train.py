@@ -27,7 +27,7 @@ def build_scheduler(optimizer, cfg):
 
 
 def run_training(cfg, ckpt_path="outputs/best.pt"):
-    """Train LoRA adapters with the given config; returns metrics and the epoch history."""
+    """Train the LoRA matrices and head with the given config; returns metrics and history."""
     set_seed(cfg.seed)
     use_cuda = cfg.device == "cuda" and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -67,7 +67,7 @@ def run_training(cfg, ckpt_path="outputs/best.pt"):
         if va_acc > best_acc:
             best_acc = va_acc
             os.makedirs(os.path.dirname(ckpt_path) or ".", exist_ok=True)
-            # only the adapters + head go in the checkpoint — a few MB instead of 344
+            # only the lora weights + head go in the checkpoint — a few MB instead of 344
             torch.save({"model": trainable_state_dict(model), "epoch": epoch,
                         "val_acc": best_acc}, ckpt_path)
 

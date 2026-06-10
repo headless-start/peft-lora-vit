@@ -5,10 +5,10 @@ import torch.nn as nn
 
 
 class LoRAQKV(nn.Module):
-    """Fused qkv projection with low-rank adapters on the q and v blocks.
+    """Fused qkv projection with LoRA on the q and v blocks.
 
     timm packs q, k, v into a single Linear (dim -> 3*dim). We keep that
-    projection frozen and learn a small delta on the q and v slices only,
+    projection frozen and learn a low-rank delta on the q and v slices only,
     following the original LoRA setup (k is left untouched).
     """
 
