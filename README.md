@@ -7,6 +7,8 @@ This project demonstrates **parameter-efficient fine-tuning** of a **Vision Tran
 **Backbone**: `vit_base_patch16_224`, pretrained on ImageNet via `timm`.  
 **Goal**: Strong top-1 accuracy while training well under 5% of the model's parameters.
 
+I built this as hands-on preparation for the PEFT/LoRA side of my thesis; everything here is a standalone prototype on public data and public weights.
+
 ![Dataset Samples](results/pet_samples.png)
 
 ---
@@ -14,6 +16,7 @@ This project demonstrates **parameter-efficient fine-tuning** of a **Vision Tran
 ## 🚀 Key Features
 1. **Hand-Written LoRA**:
    - Low-rank matrices injected into the fused q/v attention projections (`B · A · x · α/r`, with `α = 2r` and `B` zero-initialised so training starts exactly from the pretrained model).
+   - Placement follows the original LoRA paper (Hu et al., 2022), whose placement study found adapting **q and v** the best use of a fixed parameter budget — k contributes least.
    - Only the LoRA matrices and the classifier head are trainable; the backbone is fully frozen.
 2. **Rank Ablation**:
    - One command sweeps the LoRA rank over {4, 8, 16, 32} and plots accuracy and cost against rank.
@@ -29,12 +32,24 @@ This project demonstrates **parameter-efficient fine-tuning** of a **Vision Tran
 ---
 
 ## 🔍 Findings
-- **Top-1 Accuracy**: **94.4%** on the Pets validation set.
+- **Top-1 Accuracy**: **95.2%** on the Pets validation set (weighted average recall, WAR).
 - **Trainable Parameters**: 323K out of 86.1M — just **0.38%** of the model.
-- **Setup**: LoRA rank 8 on q/v, AdamW with a cosine schedule, mixed precision.
+- **Setup**: LoRA rank 8 on q/v, 25 epochs, AdamW with warmup + cosine decay, mixed precision.
 - **Takeaway**: LoRA recovers near full fine-tuning accuracy while training under half a percent of the weights.
 
 ![Training Curves](results/training_curve.png)
+
+### Rank Ablation
+Sweeping the LoRA rank shows accuracy saturates almost immediately — rank 4 is already within 0.4 points of the best, and pushing to rank 32 buys nothing for 7× the parameters:
+
+| rank | top-1 acc (WAR) | trainable params | % of total |
+|------|-----------------|------------------|------------|
+| 4    | 94.9%           | 176K             | 0.20%      |
+| 8    | **95.2%**       | 323K             | 0.38%      |
+| 16   | 94.7%           | 618K             | 0.72%      |
+| 32   | 94.8%           | 1.21M            | 1.39%      |
+
+![Rank Ablation](results/ablation.png)
 
 ---
 
