@@ -1,14 +1,14 @@
 {
   "backbone": "vit_base_patch16_224",
   "dataset": "oxford_pets",
-  "epochs": 10,
-  "top1_acc": 0.9444,
+  "epochs": 25,
+  "top1_acc": 0.9518,
   "trainable_params": 323365,
   "total_params": 86122021,
   "trainable_pct": 0.375,
   "lora": {
     "r": 8,
-    "alpha": 16,
+    "alpha_factor": 2,
     "dropout": 0.0
   }
 }

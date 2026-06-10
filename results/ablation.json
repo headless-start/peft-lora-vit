@@ -1,0 +1,26 @@
+[
+  {
+    "r": 4,
+    "top1_acc": 0.9485,
+    "trainable_params": 175909,
+    "trainable_pct": 0.205
+  },
+  {
+    "r": 8,
+    "top1_acc": 0.9518,
+    "trainable_params": 323365,
+    "trainable_pct": 0.375
+  },
+  {
+    "r": 16,
+    "top1_acc": 0.9466,
+    "trainable_params": 618277,
+    "trainable_pct": 0.715
+  },
+  {
+    "r": 32,
+    "top1_acc": 0.9482,
+    "trainable_params": 1208101,
+    "trainable_pct": 1.389
+  }
+]
