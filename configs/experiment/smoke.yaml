@@ -17,3 +17,6 @@ data:
 
 wandb:
   mode: disabled
+
+train:
+  ckpt: outputs/smoke.pt   # keep smoke runs away from the real best checkpoint

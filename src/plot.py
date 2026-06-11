@@ -45,6 +45,21 @@ def save_ablation(rows, path):
     plt.close(fig)
 
 
+def save_tradeoff(rows, path):
+    """Scatter of accuracy against trainable parameters for the method comparison."""
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for r in rows:
+        ax.scatter(r["trainable_params"] / 1e6, r["top1_acc"], s=80, zorder=3)
+        ax.annotate(r["method"], (r["trainable_params"] / 1e6, r["top1_acc"]),
+                    textcoords="offset points", xytext=(8, -3))
+    ax.set(xlabel="trainable params (M, log scale)", ylabel="top-1 accuracy",
+           title="accuracy vs trainable parameters", xscale="log")
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
 def save_placement(rows, path):
     """Bar chart of accuracy by LoRA placement (q/k/v subsets) at fixed rank."""
     labels = [r["placement"] for r in rows]

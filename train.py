@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import hydra
 import torch
@@ -49,10 +50,15 @@ def run_training(cfg, ckpt_path="outputs/best.pt"):
     wandb.init(project=cfg.wandb.project, mode=cfg.wandb.mode, name=cfg.wandb.name,
                config=OmegaConf.to_container(cfg, resolve=True))
 
-    history, best_acc = [], 0.0
+    if use_cuda:
+        torch.cuda.reset_peak_memory_stats()
+
+    history, best_acc, epoch_secs = [], 0.0, []
     for epoch in range(cfg.train.epochs):
+        t0 = time.time()
         tr_loss, tr_acc = run_epoch(model, train_loader, device, optimizer, scaler,
                                     use_amp, cfg.train.limit_train_batches)
+        epoch_secs.append(time.time() - t0)
         va_loss, va_acc = run_epoch(model, val_loader, device, use_amp=use_amp,
                                     limit_batches=cfg.train.limit_val_batches)
         scheduler.step()
@@ -73,14 +79,16 @@ def run_training(cfg, ckpt_path="outputs/best.pt"):
 
     wandb.finish()
     print(f"best val acc: {best_acc:.4f}")
+    peak_vram_gb = round(torch.cuda.max_memory_allocated() / 1024**3, 2) if use_cuda else None
     return {"best_acc": best_acc, "trainable": trainable, "total": total,
-            "history": history}
+            "history": history, "epoch_sec": round(sum(epoch_secs) / len(epoch_secs), 1),
+            "peak_vram_gb": peak_vram_gb, "ckpt_path": ckpt_path}
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: DictConfig):
     """Single training run: train, then write the curve figure and metrics.json."""
-    res = run_training(cfg)
+    res = run_training(cfg, ckpt_path=cfg.train.get("ckpt", "outputs/best.pt"))
 
     os.makedirs("results", exist_ok=True)
     save_curve(res["history"], "results/training_curve.png")

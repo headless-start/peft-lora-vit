@@ -4,18 +4,28 @@ from .lora import LoRAQKV, inject_lora
 
 
 def build_model(cfg, num_classes):
-    """Build the ViT, attach LoRA where configured, swap the head, and freeze the rest."""
+    """Build the ViT in the configured mode: lora, head (linear probe) or full fine-tuning."""
     model = timm.create_model(
         cfg.model.backbone,
         pretrained=cfg.model.pretrained,
         num_classes=num_classes,
         drop_path_rate=cfg.model.get("drop_path_rate", 0.0),
     )
-    r = cfg.model.lora.r
-    alpha = cfg.model.lora.alpha_factor * r
-    targets = tuple(cfg.model.lora.get("placement", ["q", "v"]))
-    n_lora = inject_lora(model, r, alpha, cfg.model.lora.dropout, targets)
-    freeze_backbone(model)
+    mode = cfg.model.get("mode", "lora")
+    n_lora = 0
+    if mode == "lora":
+        r = cfg.model.lora.r
+        alpha = cfg.model.lora.alpha_factor * r
+        targets = tuple(cfg.model.lora.get("placement", ["q", "v"]))
+        n_lora = inject_lora(model, r, alpha, cfg.model.lora.dropout, targets)
+        freeze_backbone(model)
+    elif mode == "head":
+        for p in model.parameters():
+            p.requires_grad_(False)
+        for p in model.get_classifier().parameters():
+            p.requires_grad_(True)
+    elif mode != "full":
+        raise ValueError(f"unknown mode: {mode}")
     return model, n_lora
 
 

@@ -105,6 +105,12 @@ python ablate.py                    # ranks 4, 8, 16, 32
 python ablate.py --ranks 4,8 data=flowers
 ```
 
+Compare LoRA against the baselines — linear probe and full fine-tuning (writes `results/baselines.json` and `results/baselines.png`):
+
+```bash
+python baselines.py
+```
+
 Classify your own images with a trained checkpoint:
 
 ```bash
