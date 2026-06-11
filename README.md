@@ -32,24 +32,42 @@ I built this as hands-on preparation for the PEFT/LoRA side of my thesis; everyt
 ---
 
 ## 🔍 Findings
-- **Top-1 Accuracy**: **95.2%** on the Pets validation set (weighted average recall, WAR).
+- **Top-1 Accuracy**: **95.2%** on the Pets validation set (weighted average recall, WAR), best run with rank 8 on q/v.
 - **Trainable Parameters**: 323K out of 86.1M — just **0.38%** of the model.
 - **Setup**: LoRA rank 8 on q/v, 25 epochs, AdamW with warmup + cosine decay, mixed precision.
 - **Takeaway**: LoRA recovers near full fine-tuning accuracy while training under half a percent of the weights.
 
 ![Training Curves](results/training_curve.png)
 
+### Placement Ablation
+Which projections should carry the LoRA update? Sweeping every q/k/v subset at rank 8:
+
+| placement | top-1 acc (WAR) | trainable params | % of total |
+|-----------|-----------------|------------------|------------|
+| q         | 94.3%           | 176K             | 0.21%      |
+| k         | 94.1%           | 176K             | 0.21%      |
+| v         | 94.7%           | 176K             | 0.21%      |
+| q + k     | 94.3%           | 323K             | 0.38%      |
+| q + v     | **94.9%**       | 323K             | 0.38%      |
+| q + k + v | 94.7%           | 471K             | 0.55%      |
+
+**q + v wins.** k is the weakest single placement and adding it to q+v helps nothing — q and k only shape the attention pattern through their inner product, so adapting q already covers it, while v changes the content being mixed and is complementary. This reproduces the placement study in the LoRA paper.
+
+![Placement Ablation](results/placement.png)
+
 ### Rank Ablation
-Sweeping the LoRA rank shows accuracy saturates almost immediately — rank 4 is already within 0.4 points of the best, and pushing to rank 32 buys nothing for 7× the parameters:
+With placement fixed at q+v, sweeping the rank shows accuracy saturates almost immediately — rank 4 is already within 0.1 points of the best, and rank 32 buys nothing for 7× the parameters:
 
 | rank | top-1 acc (WAR) | trainable params | % of total |
 |------|-----------------|------------------|------------|
-| 4    | 94.9%           | 176K             | 0.20%      |
-| 8    | **95.2%**       | 323K             | 0.38%      |
-| 16   | 94.7%           | 618K             | 0.72%      |
-| 32   | 94.8%           | 1.21M            | 1.39%      |
+| 4    | 94.8%           | 176K             | 0.21%      |
+| 8    | 94.9%           | 323K             | 0.38%      |
+| 16   | 94.6%           | 618K             | 0.72%      |
+| 32   | 94.9%           | 1.21M            | 1.39%      |
 
 ![Rank Ablation](results/ablation.png)
+
+Ablation numbers are single runs with the default recipe; reruns move individual cells by ±0.3 points. The repo default (rank 8 on q/v) is the configuration both sweeps select.
 
 ---
 
