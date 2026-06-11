@@ -35,9 +35,24 @@ I built this as hands-on preparation for the PEFT/LoRA side of my thesis; everyt
 - **Top-1 Accuracy**: **95.2%** on the Pets validation set (weighted average recall, WAR), best run with rank 8 on q/v.
 - **Trainable Parameters**: 323K out of 86.1M — just **0.38%** of the model.
 - **Setup**: LoRA rank 8 on q/v, 25 epochs, AdamW with warmup + cosine decay, mixed precision.
-- **Takeaway**: LoRA recovers near full fine-tuning accuracy while training under half a percent of the weights.
+- **Takeaway**: LoRA matches — here slightly beats — full fine-tuning while training under half a percent of the weights.
 
 ![Training Curves](results/training_curve.png)
+
+### Baselines: how much does LoRA actually buy?
+The comparison that matters: LoRA against a frozen-backbone **linear probe** (lower bound) and **full fine-tuning** (upper bound), all under the same protocol:
+
+| method | top-1 acc (WAR) | trainable params | checkpoint | s/epoch | peak VRAM |
+|------------------|-----------------|------------------|------------|---------|-----------|
+| linear probe     | 93.5%           | 28K (0.03%)      | 0.1 MB     | 20      | 0.7 GB    |
+| LoRA r=8 (ours)  | **94.9%**       | 323K (0.38%)     | 1.2 MB     | 31      | 3.7 GB    |
+| full fine-tuning | 93.9%           | 85.8M (100%)     | 327 MB     | 41      | 2.5 GB*   |
+
+\* full fine-tuning runs at batch 16 (the others at 64) to fit optimizer states for all 86M parameters into 8 GB — its per-sample memory is far higher.
+
+LoRA beats the linear probe by **+1.4 points**, so the frozen features alone are not enough — and it even edges out full fine-tuning by **+1.0** while training **265× fewer parameters** with a **270× smaller checkpoint**. On a 3.7K-image dataset, updating all 86M weights overfits where the low-rank update acts as a regulariser; this mirrors the LoRA paper, which reports LoRA matching or outperforming full fine-tuning on most benchmarks.
+
+![Baselines](results/baselines.png)
 
 ### Placement Ablation
 Which projections should carry the LoRA update? Sweeping every q/k/v subset at rank 8:
