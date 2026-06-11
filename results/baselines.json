@@ -1,0 +1,29 @@
+[
+  {
+    "method": "head",
+    "top1_acc": 0.9351,
+    "trainable_params": 28453,
+    "trainable_pct": 0.033,
+    "ckpt_mb": 0.1,
+    "epoch_sec": 19.7,
+    "peak_vram_gb": 0.66
+  },
+  {
+    "method": "lora",
+    "top1_acc": 0.9488,
+    "trainable_params": 323365,
+    "trainable_pct": 0.375,
+    "ckpt_mb": 1.2,
+    "epoch_sec": 30.8,
+    "peak_vram_gb": 3.73
+  },
+  {
+    "method": "full",
+    "top1_acc": 0.9392,
+    "trainable_params": 85827109,
+    "trainable_pct": 100.0,
+    "ckpt_mb": 327.5,
+    "epoch_sec": 40.6,
+    "peak_vram_gb": 2.49
+  }
+]
