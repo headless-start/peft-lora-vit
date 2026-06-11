@@ -16,7 +16,7 @@ I built this as hands-on preparation for the PEFT/LoRA side of my thesis; everyt
 ## 🚀 Key Features
 1. **Hand-Written LoRA**:
    - Low-rank matrices injected into the fused q/v attention projections (`B · A · x · α/r`, with `α = 2r` and `B` zero-initialised so training starts exactly from the pretrained model).
-   - Placement follows the original LoRA paper (Hu et al., 2022), whose placement study found adapting **q and v** the best use of a fixed parameter budget — k contributes least.
+   - Placement follows the original [LoRA paper (Hu et al., 2022)](https://arxiv.org/abs/2106.09685), whose placement study (§7.1) found adapting **q and v** the best use of a fixed parameter budget — k contributes least.
    - Only the LoRA matrices and the classifier head are trainable; the backbone is fully frozen.
 2. **Rank Ablation**:
    - One command sweeps the LoRA rank over {4, 8, 16, 32} and plots accuracy and cost against rank.
@@ -51,7 +51,7 @@ Which projections should carry the LoRA update? Sweeping every q/k/v subset at r
 | q + v     | **94.9%**       | 323K             | 0.38%      |
 | q + k + v | 94.7%           | 471K             | 0.55%      |
 
-**q + v wins.** k is the weakest single placement and adding it to q+v helps nothing — q and k only shape the attention pattern through their inner product, so adapting q already covers it, while v changes the content being mixed and is complementary. This reproduces the placement study in the LoRA paper.
+**q + v wins.** k is the weakest single placement and adding it to q+v helps nothing — q and k only shape the attention pattern through their inner product, so adapting q already covers it, while v changes the content being mixed and is complementary. This reproduces the placement study in [the LoRA paper](https://arxiv.org/abs/2106.09685) (§7.1, Table 5).
 
 ![Placement Ablation](results/placement.png)
 
@@ -134,6 +134,11 @@ Training curves and `metrics.json` are written to `results/`; checkpoints go to 
 - Python 3.10+
 - Libraries: `torch`, `torchvision`, `timm`, `hydra-core`, `wandb`, `matplotlib`
 - Hardware: CUDA GPU recommended (a CPU smoke run is supported)
+
+### Reproducibility
+- Runs on Linux, macOS and Windows; all paths and commands are OS-agnostic.
+- Seeds are fixed (`seed: 42`). Reported numbers came from Python 3.13, `torch` 2.12, `torchvision` 0.27, `timm` 1.0.27 on a single RTX 4060; expect individual cells to move by ±0.3 points across reruns and library versions due to GPU non-determinism.
+- On machines with little RAM, add `data.num_workers=0` to any command.
 
 ---
 
